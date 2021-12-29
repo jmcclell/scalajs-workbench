@@ -3,7 +3,7 @@ import sbt.Keys._
 inThisBuild(Def.settings(
   version := "0.4.2",
   organization := "com.lihaoyi",
-  scalaVersion := "2.12.11",
+  scalaVersion := "2.12.13",
   scalacOptions ++= Seq("-feature", "-deprecation"),
 ))
 
@@ -11,9 +11,9 @@ lazy val root = project.in(file("."))
   .enablePlugins(SbtPlugin)
   .settings(
     name := "workbench",
-    unmanagedSourceDirectories in Compile += baseDirectory.value /  "shared" / "main" / "scala",
-    unmanagedSourceDirectories in Test += baseDirectory.value / "shared" / "test" / "scala",
-    publishArtifact in Test := false,
+    Compile / unmanagedSourceDirectories += baseDirectory.value /  "shared" / "main" / "scala",
+    Test / unmanagedSourceDirectories += baseDirectory.value / "shared" / "test" / "scala",
+    Test / publishArtifact := false,
     publishTo := Some("releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2"),
     pomExtra :=
       <url>https://github.com/lihaoyi/workbench</url>
@@ -35,9 +35,9 @@ lazy val root = project.in(file("."))
           </developer>
         </developers>
     ,
-    (resources in Compile) += {
-      (fullOptJS in (client, Compile)).value
-      (artifactPath in (client, Compile, fullOptJS)).value
+    Compile / resources += {
+      (client / Compile / fullOptJS).value
+      (client / Compile / fullOptJS / artifactPath).value
     },
     addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.1.0"),
     libraryDependencies ++= Seq(
@@ -52,7 +52,7 @@ lazy val root = project.in(file("."))
 lazy val client = project.in(file("client"))
   .enablePlugins(ScalaJSPlugin)
   .settings(
-    unmanagedSourceDirectories in Compile += baseDirectory.value / ".." / "shared" / "main" / "scala",
+    Compile / unmanagedSourceDirectories += baseDirectory.value / ".." / "shared" / "main" / "scala",
     libraryDependencies ++= Seq(
       Dependencies.autowire.value,
       Dependencies.dom.value,

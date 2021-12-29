@@ -1,13 +1,12 @@
 package com.lihaoyi.workbench
 
 import autowire._
-import org.apache.logging.log4j.core.appender.AbstractAppender
-import org.apache.logging.log4j.core.layout.PatternLayout
-import org.apache.logging.log4j.core.{LogEvent => Log4JLogEvent}
 import org.apache.logging.log4j.message._
 import org.scalajs.sbtplugin.ScalaJSPlugin
 import sbt.Keys._
 import sbt._
+
+import sbt.internal.util.ConsoleAppender
 
 object WorkbenchBasePlugin extends AutoPlugin {
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -44,31 +43,22 @@ object WorkbenchBasePlugin extends AutoPlugin {
     localUrl := ("localhost", 12345),
     workbenchDefaultRootObject := None,
     workbenchCompression := false,
-    (extraLoggers in ThisBuild) := {
-      val clientLogger = new AbstractAppender(
-        "FakeAppender",
+    ThisBuild / extraAppenders := {
+      val clientLogger = new ConsoleAppender(
+        "WorkbenchFakeAppender",
         null,
-        PatternLayout.createDefaultLayout(),
-        true,
-        Array.empty) {
-        override def append(event: Log4JLogEvent): Unit = {
+        ConsoleAppender.noSuppressedMessage
+      ) {
+        override def appendLog(level: Level.Value, message: => String): Unit = {
+          server.value.Wire[WorkbenchApi].print(level.toString, message).call()
+        }
 
-          val level = sbt.internal.util.ConsoleAppender.toLevel(event.getLevel)
-          val message = event.getMessage
-
-          message match {
-            case o: ObjectMessage =>
-              o.getParameter match {
-                case e: sbt.internal.util.StringEvent => server.value.Wire[WorkbenchApi].print(level.toString, e.message).call()
-                case e: sbt.internal.util.ObjectEvent[_] => server.value.Wire[WorkbenchApi].print(level.toString, e.message.toString).call()
-                case _ => server.value.Wire[WorkbenchApi].print(level.toString, message.getFormattedMessage).call()
-              }
-            case _ => server.value.Wire[WorkbenchApi].print(level.toString, message.getFormattedMessage).call()
-          }
+        override def control(event: ControlEvent.Value, message: => String): Unit = {
+          server.value.Wire[WorkbenchApi].print(Level.Info.toString, message).call()
         }
       }
-      clientLogger.start()
-      val currentFunction = extraLoggers.value
+
+      val currentFunction = extraAppenders.value
       key: ScopedKey[_] => clientLogger +: currentFunction(key)
     },
     server := {
@@ -79,14 +69,14 @@ object WorkbenchBasePlugin extends AutoPlugin {
     },
     workbenchStartMode := OnSbtLoad,
     startWorkbenchServer := server.value.startServer(),
-    (compile in Compile) := (compile in Compile)
+    (Compile / compile) := (Compile / compile)
       .dependsOn(
         Def.task {
           if (workbenchStartMode.value == OnCompile) server.value.startServer()
         })
       .value,
-    (onUnload in Global) := {
-      (onUnload in Global).value.compose { state =>
+    (Global / onUnload) := {
+      (Global / onUnload).value.compose { state =>
         server.value.kill()
         state
       }

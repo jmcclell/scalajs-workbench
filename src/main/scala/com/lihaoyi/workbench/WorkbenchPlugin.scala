@@ -24,7 +24,7 @@ object WorkbenchPlugin extends AutoPlugin {
       server.value.Wire[WorkbenchApi].reload().call()
     },
 
-    refreshBrowsers := refreshBrowsers.triggeredBy(fastOptJS in Compile).value
+    refreshBrowsers := refreshBrowsers.triggeredBy(Compile / fastOptJS).value
   )
 
   override def projectSettings = workbenchSettings
