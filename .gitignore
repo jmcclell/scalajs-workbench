@@ -6,3 +6,7 @@ target/
 .idea
 .idea_modules
 .vscode
+.bloop/
+.metals/
+metals.sbt
+.bsp/
