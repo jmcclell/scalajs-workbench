@@ -1,7 +1,7 @@
 import sbt.Keys._
 
 inThisBuild(Def.settings(
-  version := "0.4.2",
+  version := "0.5.0",
   organization := "com.lihaoyi",
   scalaVersion := "2.12.13",
   scalacOptions ++= Seq("-feature", "-deprecation"),
